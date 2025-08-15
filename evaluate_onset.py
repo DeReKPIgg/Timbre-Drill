@@ -58,6 +58,8 @@ def evaluate_onset(model, eval_set, multipliers, THRESHOLD=0.5, writer=None,
             weak_label_neg = features['pitch_negative_label'] # (B, F(per), T)
             #weak_label_pos = features['pitch_positive_label'] # (B, F(per), T)
 
+            spectral_flux = features['spectral_flux']
+
             # Process features to obtain logits
             output = model(input, transcribe=True)
 
@@ -138,10 +140,12 @@ def evaluate_onset(model, eval_set, multipliers, THRESHOLD=0.5, writer=None,
                 # plot_FCQT_salience = FCQT_salience
 
                 plot_onset_logits = onset_logits
+                plot_onset_salience_sigmoid = ProbLike(onset_logits)
                 plot_onset_salience = onset_salience
 
                 # plot_weak_label_pos = weak_label_pos
-                # plot_weak_label_neg = weak_label_neg
+                plot_weak_label_neg = weak_label_neg
+                plot_spectral_flux = spectral_flux
 
                 plot_pitch_const = pitch_const
                 plot_pitch_logits_const = pitch_logits_const
@@ -183,10 +187,12 @@ def evaluate_onset(model, eval_set, multipliers, THRESHOLD=0.5, writer=None,
             #note_salience = plot_note_salience.unsqueeze(-3).squeeze(0)
 
             onset_logits = plot_onset_logits.unsqueeze(-3).squeeze(0)
+            onset_salience_sigmoid = plot_onset_salience_sigmoid.unsqueeze(-3).squeeze(0)
             onset_salience = plot_onset_salience.unsqueeze(-3).squeeze(0)
 
             # weak_label_pos = plot_weak_label_pos.unsqueeze(-3).squeeze(0)
-            # weak_label_neg = plot_weak_label_neg.unsqueeze(-3).squeeze(0)
+            weak_label_neg = plot_weak_label_neg.unsqueeze(-3).squeeze(0)
+            spectral_flux = plot_spectral_flux.unsqueeze(-3).squeeze(0)
 
             pitch_const = plot_pitch_const.unsqueeze(-3).squeeze(0)
             pitch_logits_const = plot_pitch_logits_const.unsqueeze(-3).squeeze(0)
@@ -220,7 +226,8 @@ def evaluate_onset(model, eval_set, multipliers, THRESHOLD=0.5, writer=None,
             # writer.add_image(f'{eval_set.name()}/FCQT salience', FCQT_salience.flip(-2), i)
 
             writer.add_image(f'{eval_set.name()}/onset logits', onset_logits.flip(-2), i)
-            writer.add_image(f'{eval_set.name()}/onset salience', onset_salience.flip(-2), i)
+            writer.add_image(f'{eval_set.name()}/onset salience(sparsemax)', onset_salience.flip(-2), i)
+            writer.add_image(f'{eval_set.name()}/onset salience(sigmoid)', onset_salience_sigmoid.flip(-2), i)
 
             writer.add_image(f'{eval_set.name()}/logits_reconst', pitch_logits_const.flip(-2), i)
             #writer.add_image(f'{eval_set.name()}/reconst', pitch_const_const.flip(-2), i)
@@ -228,7 +235,9 @@ def evaluate_onset(model, eval_set, multipliers, THRESHOLD=0.5, writer=None,
             #writer.add_image(f'{eval_set.name()}/pre-trans(real)', pitch_trans.flip(-2), i)
 
             #writer.add_image(f'{eval_set.name()}/Weak Label_h (dB)', weak_label_pos.flip(-2), i)
-            #writer.add_image(f'{eval_set.name()}/Weak Label_1 (dB)', weak_label_neg.flip(-2), i)
-            writer.add_image(f'{eval_set.name()}/Spectral Flux', onset_selection.flip(-2), i)
+            writer.add_image(f'{eval_set.name()}/Weak Label_1 (dB)', weak_label_neg.flip(-2), i)
+            writer.add_image(f'{eval_set.name()}/Onset Selection', onset_selection.flip(-2), i)
+            writer.add_image(f'{eval_set.name()}/Spectral Flux', spectral_flux.flip(-2), i)
+
 
     return average_results

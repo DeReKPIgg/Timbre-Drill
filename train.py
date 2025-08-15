@@ -50,13 +50,13 @@ def config():
     Phase3 = True
 
     pitch_set = 'Nsynth' # Nsynth
-    onset_set = 'MAPS' # MAPS or URMP or MusicNet
+    onset_set = 'MusicNet' # MAPS or URMP or MusicNet
 
     set_dict = {'Nsynth': NSynth.name(), 'MAPS': MAPS.name(), 'URMP': URMP_Mixtures.name(), 'MusicNet': MusicNet.name()}
 
     # Specify a checkpoint from which to resume training (None to disable)
 
-    checkpoint_path = '/host/data/experiments_result/TD-10-2(2AE)/MAPS/pitch/model-21300.pt'
+    checkpoint_path = '/host/data/experiments_result/TD-10-2(2AE)/MusicNet/pitch/model-24300.pt'
     #checkpoint_path = None
 
     # Maximum number of training iterations to conduct
@@ -102,13 +102,14 @@ def config():
         'note_compress': 5,
         'frequency_distance': 0,
 
-        'bce_o' : 2,
-        'sparsity_t_o' : 1,
+        'bce_o' : 3,
+        'sparsity_t_o' : 0,
         'sparsity_f_o' : 0,
         'timbre_o' : 1,
         'geometric_o' : 1,
 
         'reconstruction' : 1,
+        'reconstruction_o' : 2,
 
         'supervised' : 0
     }
@@ -141,10 +142,10 @@ def config():
     n_epochs_early_stop = None
 
     # IDs of the GPUs to use, if available
-    gpu_ids = [0] if DEBUG else [2]
+    gpu_ids = [0] if DEBUG else [4]
 
     # Random seed for this experiment
-    seed = 42
+    seed = 4200
 
     ########################
     ## FEATURE EXTRACTION ##
@@ -1091,7 +1092,7 @@ def train_model(TRAIN_FROM_SCRATCH, Phase1, Phase2, Phase3, pitch_set, onset_set
                                     multipliers['sparsity_t_o'] * onset_time_sparsity_loss + \
                                     multipliers['timbre_o'] * onset_timbre_loss + \
                                     multipliers['geometric_o'] * onset_geometric_loss + \
-                                    multipliers['reconstruction'] * onset_reconstruction_loss
+                                    multipliers['reconstruction_o'] * onset_reconstruction_loss
                     
                     optimizer_onset.zero_grad()
                     Phase3_loss.backward()

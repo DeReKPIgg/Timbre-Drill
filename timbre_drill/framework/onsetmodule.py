@@ -37,7 +37,8 @@ class Onset_Finder(nn.Module):
         average_filter_weights[..., (self.filter_span_front+1+self.filter_span_back):] = 0
 
         self.average_filter.weight = torch.nn.Parameter(average_filter_weights)
-        self.filter_threshold = 0.24
+        #self.filter_threshold = 0.24
+        self.filter_threshold = 0.48
         self.alphaz = 0.99
     
     @staticmethod

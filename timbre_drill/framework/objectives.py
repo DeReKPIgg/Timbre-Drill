@@ -91,7 +91,7 @@ def compute_harmonic_loss(embeddings, salience):
 def compute_onset_bce_loss(embeddings, onset_detection):
     # Compute bce loss of activations
 
-    pos_weight = torch.tensor(100)
+    pos_weight = torch.tensor(300)
 
     bce_loss = F.binary_cross_entropy_with_logits(embeddings, onset_detection, reduction='none', pos_weight=pos_weight)
 

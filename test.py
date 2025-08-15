@@ -45,7 +45,7 @@ def config():
     ##############################
 
     # Specify a checkpoint from which to resume training (None to disable)
-    checkpoint_path = '/host/data/MCT/TIMBRE-DRILL-10-2/generated/experiments/Local_testing/models/MAPS_32400.pt'
+    checkpoint_path = '/host/data/MCT/TIMBRE-DRILL-10-2/generated/experiments/Local_testing/models/MusicNet_33900.pt'
     #checkpoint_path = None
 
     # Number of seconds of audio per sample
@@ -126,7 +126,7 @@ def config():
     bins_per_octave = 60 # 5 bins per semitone
 
     # Number of octaves the CQT should span
-    n_octaves = 9
+    n_octaves = 8
 
     '''hcqt'''
     harmonics = [0.5, 1, 2, 3, 4, 5]
@@ -410,6 +410,7 @@ def test_model(checkpoint_path, n_secs, multipliers, gpu_ids, seed, sample_rate,
                                  eq_kwargs=eq_kwargs,
                                  gm_kwargs=gm_kwargs,
                                  plotNsave=False,
+                                 melodia_trick=True,
                                  midi_path='./output.mid')
 
         

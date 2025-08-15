@@ -213,6 +213,10 @@ class SS_NT(nn.Module):
           # log (1 + |CQT|)
           spectral_flux, spectral_flux_dn, onset_select = self.onset_finder(features_complex)
 
+          # numerical problem ??
+          spectral_flux = self.sliCQ.to_decibels(spectral_flux, rescale=False)
+          spectral_flux = self.sliCQ_OPS.rescale_decibels(spectral_flux) 
+
           features = {
             'CCQT_db': input, # model input (B, 2, F(per), T),
             'hcqt': features_db,

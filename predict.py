@@ -17,7 +17,7 @@ import mir_eval
 
 def predict(model, eval_set, multipliers, THRESHOLD=0.5, THRESHOLD_O=0.5, writer=None,
              i=0, device='cpu', eq_fn=None, eq_kwargs={}, gm_kwargs={}, midi_path=None,
-             plotNsave=False):
+             melodia_trick=True, plotNsave=False):
     # Initialize a new evaluator for the dataset
     evaluator = MultipitchEvaluator()
 
@@ -178,10 +178,10 @@ def predict(model, eval_set, multipliers, THRESHOLD=0.5, THRESHOLD_O=0.5, writer
                 onset_thresh=THRESHOLD_O,
                 frame_thresh=THRESHOLD,
                 infer_onsets=False,
-                min_note_len=5,
+                min_note_len=11,
                 min_freq=None,
                 max_freq=None,
-                melodia_trick=True,
+                melodia_trick=melodia_trick,
             )
 
             intervals_est = [
