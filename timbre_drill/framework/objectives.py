@@ -91,7 +91,7 @@ def compute_harmonic_loss(embeddings, salience):
 def compute_onset_bce_loss(embeddings, onset_detection):
     # Compute bce loss of activations
 
-    pos_weight = torch.tensor(300)
+    pos_weight = torch.tensor(200)
 
     bce_loss = F.binary_cross_entropy_with_logits(embeddings, onset_detection, reduction='none', pos_weight=pos_weight)
 
@@ -146,7 +146,7 @@ def compute_time_sparsity_loss(activations):
     # Compute sparsity loss as the L1 norm of the activations across time
     sparsity_loss = torch.norm(activations, 1, dim=-1)
 
-    # Average loss across time and batch
+    # Average loss across frequency and batch
     sparsity_loss = sparsity_loss.mean(-1).mean(-1)
 
     return sparsity_loss
@@ -350,8 +350,9 @@ def compute_onset_timbre_loss(model, features, embeddings, eq_fn, **eq_kwargs):
     # Convert both sets of logits to activations (implicit pitch salience)
     original_salience = embeddings
 
+    pos_weight = torch.tensor(200)
     # Compute timbre loss as BCE of embeddings computed from equalized features with respect to original activations
-    timbre_loss = F.binary_cross_entropy_with_logits(equalization_embeddings, original_salience, reduction='none')
+    timbre_loss = F.binary_cross_entropy_with_logits(equalization_embeddings, original_salience, reduction='none', pos_weight = pos_weight)
 
     # Sum across frequency bins and average across time and batch
     timbre_loss = timbre_loss.sum(-2).mean(-1).mean(-1)
@@ -538,8 +539,10 @@ def compute_onset_geometric_loss(model, features, embeddings, max_shift_v, max_s
     # Remove temporarily added channel dimension
     transformed_salience = transformed_salience.squeeze(-3)
 
+    pos_weight = torch.tensor(200)
+
     # Compute geometric loss as BCE of embeddings computed from transformed features with respect to transformed activations
-    geometric_loss = F.binary_cross_entropy_with_logits(transformed_embeddings, transformed_salience, reduction='none')
+    geometric_loss = F.binary_cross_entropy_with_logits(transformed_embeddings, transformed_salience, reduction='none', pos_weight=pos_weight)
 
     # Sum across frequency bins and average across time and batch
     geometric_loss = geometric_loss.sum(-2).mean(-1).mean(-1)

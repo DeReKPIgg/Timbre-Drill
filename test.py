@@ -45,7 +45,7 @@ def config():
     ##############################
 
     # Specify a checkpoint from which to resume training (None to disable)
-    checkpoint_path = '/host/data/MCT/TIMBRE-DRILL-10-2/generated/experiments/Local_testing/models/MusicNet_33900.pt'
+    checkpoint_path = '/host/data/experiments_result/TD-10-2(2AE)/MAPS/onset/MAPS/MAPS_32400.pt'
     #checkpoint_path = None
 
     # Number of seconds of audio per sample
@@ -103,7 +103,7 @@ def config():
     n_epochs_early_stop = None
 
     # IDs of the GPUs to use, if available
-    gpu_ids = [0] if DEBUG else [2]
+    gpu_ids = [0] if DEBUG else [3]
 
     # Random seed for this experiment
     seed = 420

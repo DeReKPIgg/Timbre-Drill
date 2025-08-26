@@ -54,6 +54,7 @@ def evaluate_onset(model, eval_set, multipliers, THRESHOLD=0.5, writer=None,
             input = features['hcqt'] # (B, 2, F(per), T)
 
             onset_select = features['onset_selection']
+            spectral_flux = features['spectral_flux']
 
             weak_label_neg = features['pitch_negative_label'] # (B, F(per), T)
             #weak_label_pos = features['pitch_positive_label'] # (B, F(per), T)
@@ -90,16 +91,15 @@ def evaluate_onset(model, eval_set, multipliers, THRESHOLD=0.5, writer=None,
 
             # Compute sparsity loss for the track
             onset_frequency_sparsity_loss = compute_sparsity_loss(onset_salience)
-            onset_time_sparsity_loss = compute_time_sparsity_loss(onset_salience)
+            onset_time_sparsity_loss = compute_time_sparsity_loss(ProbLike(onset_logits))
 
             '''pitch trans / onset const & pitch const / onset const''' 
-            onset_reconstruction_loss = compute_reconstruction_loss(pitch_logits, pitch_logits_const)
+            onset_reconstruction_loss = compute_reconstruction_loss(spectral_flux, pitch_logits_const)
             
             # Compute the total loss for the track
             total_loss = multipliers['bce_o'] * onset_bce_loss + \
                          multipliers['sparsity_t_o'] * onset_time_sparsity_loss + \
-                         multipliers['sparsity_f_o'] * onset_frequency_sparsity_loss + \
-                         multipliers['reconstruction'] * onset_reconstruction_loss# + \
+                         multipliers['reconstruction_o'] * onset_reconstruction_loss# + \
                          #multipliers['supervised'] * pitch_supervised_loss
 
             if eq_fn is not None:
@@ -125,8 +125,8 @@ def evaluate_onset(model, eval_set, multipliers, THRESHOLD=0.5, writer=None,
 
             # Store all losses for the track
             evaluator.append_results({'loss/onset_bce' : onset_bce_loss.item(),
-                                      'loss/onset_time_sparsity' : onset_time_sparsity_loss.item(),
-                                      'loss/onset_freq_sparsity' : onset_frequency_sparsity_loss.item(),
+                                      'loss/onset_reconstruction' : onset_reconstruction_loss.item(),
+                                      'loss/time_sparsity' : onset_time_sparsity_loss.item(),
                                       #'loss/pitch_supervised' : pitch_supervised_loss.item(),
                                       'loss/total' : total_loss.item()})
             
@@ -168,6 +168,9 @@ def evaluate_onset(model, eval_set, multipliers, THRESHOLD=0.5, writer=None,
 
         # Compute the average for all scores
         average_results, _ = evaluator.average_results()
+
+        print(eval_set.name())
+        print(average_results)
 
         if writer is not None:
             # Loop through all computed scores

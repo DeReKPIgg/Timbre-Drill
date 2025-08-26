@@ -98,6 +98,12 @@ def predict(model, eval_set, multipliers, THRESHOLD=0.5, THRESHOLD_O=0.5, writer
             #pitch_salience, onset_salience = model.inference(input)
             pitch_salience, onset_salience = model.inference_sep(input)
             
+            pitch_salience[-20:, :] = torch.zeros_like(pitch_salience[:20, :])
+            onset_salience[-20:, :] = torch.zeros_like(onset_salience[:20, :])
+
+            pitch_salience[:20, :] = torch.zeros_like(pitch_salience[:20, :])
+            onset_salience[:20, :] = torch.zeros_like(onset_salience[:20, :])
+            
             #note = pitch_contour_reduce(pitch_salience, bins_per_semitone=model.cqt_params['bins_per_octave']//12)
 
             # Determine the times associated with predictions

@@ -408,7 +408,7 @@ class Timbre_Drill(SS_NT):
         output = self.forward(_features, onset_transcribe_only=True, pitch_logits=_pitch_logits)
 
         _onset_salience = output['onset_salience']
-        #_onset_salience = output['onset_logits']
+        #_onset_salience = ProbLike(output['onset_logits'])
 
         if i==0:
           onset_salience[..., :frame_per_chunk] = _onset_salience

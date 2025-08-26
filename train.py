@@ -81,8 +81,8 @@ def config():
     learning_rate_decoder = learning_rate_encoder
 
     # Initial learning rate for note & onset
-    learning_rate_onset_encoder = learning_rate_encoder
-    learning_rate_onset_decoder = learning_rate_encoder
+    learning_rate_onset_encoder = learning_rate_encoder * 5
+    learning_rate_onset_decoder = learning_rate_encoder * 5
 
     # Group together both learning rates
     learning_rates = [learning_rate_encoder, learning_rate_decoder, learning_rate_onset_encoder, learning_rate_onset_decoder]
@@ -102,14 +102,14 @@ def config():
         'note_compress': 5,
         'frequency_distance': 0,
 
-        'bce_o' : 3,
-        'sparsity_t_o' : 0,
+        'bce_o' : 5,
+        'sparsity_t_o' : 1,
         'sparsity_f_o' : 0,
         'timbre_o' : 1,
         'geometric_o' : 1,
 
         'reconstruction' : 1,
-        'reconstruction_o' : 2,
+        'reconstruction_o' : 1,
 
         'supervised' : 0
     }
@@ -118,10 +118,8 @@ def config():
     n_epochs_warmup = 0
 
     # Set validation dataset to compare for learning rate decay and early stopping
-    if Phase1 is True:
-        validation_criteria_set = set_dict[pitch_set]
-    else:
-        validation_criteria_set = set_dict[onset_set]
+
+    validation_criteria_set = MAPS.name()
 
     # Set validation metric to compare for learning rate decay and early stopping
     validation_criteria_metric = 'loss/total'
@@ -142,7 +140,7 @@ def config():
     n_epochs_early_stop = None
 
     # IDs of the GPUs to use, if available
-    gpu_ids = [0] if DEBUG else [4]
+    gpu_ids = [0] if DEBUG else [2]
 
     # Random seed for this experiment
     seed = 4200
@@ -1074,7 +1072,7 @@ def train_model(TRAIN_FROM_SCRATCH, Phase1, Phase2, Phase3, pitch_set, onset_set
                     onset_frequency_sparsity_loss = compute_sparsity_loss(onset_salience)
                     writer.add_scalar('train/loss/onset_freq_sparsity', onset_frequency_sparsity_loss.item(), batch_count)
 
-                    onset_time_sparsity_loss = compute_time_sparsity_loss(onset_salience)
+                    onset_time_sparsity_loss = compute_time_sparsity_loss(ProbLike(onset_logits))
                     writer.add_scalar('train/loss/onset_time_sparsity', onset_time_sparsity_loss.item(), batch_count)
 
                     # ONSET BINARY CROSS ENTROPY
