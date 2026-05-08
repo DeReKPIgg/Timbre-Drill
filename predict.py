@@ -81,6 +81,7 @@ def predict(model, eval_set, multipliers, THRESHOLD=0.5, THRESHOLD_O=0.5, writer
                 times_ref, multi_pitch_ref = eval_set.get_ground_truth(track)
                 intervals_ref, note_pitches_ref = eval_set.get_note_ground_truth(track)
 
+
             # print(intervals_ref)
             # print(note_pitches_ref)
             # Compute full set of spectral features
@@ -89,7 +90,7 @@ def predict(model, eval_set, multipliers, THRESHOLD=0.5, THRESHOLD_O=0.5, writer
             # Extract relevant feature sets
             input = features['hcqt'] # (B, 2, F(per), T)
             onset_select = features['onset_selection'] # (B, F(one), T)
-            #weak_label_neg = features['pitch_negative_label'] # (B, F(per), T)
+            weak_label_neg = features['pitch_negative_label'] # (B, F(per), T)
             #weak_label_pos = features['pitch_positive_label'] # (B, F(per), T)
 
             # Process features to obtain logits
@@ -97,12 +98,6 @@ def predict(model, eval_set, multipliers, THRESHOLD=0.5, THRESHOLD_O=0.5, writer
             
             #pitch_salience, onset_salience = model.inference(input)
             pitch_salience, onset_salience = model.inference_sep(input)
-            
-            pitch_salience[-20:, :] = torch.zeros_like(pitch_salience[:20, :])
-            onset_salience[-20:, :] = torch.zeros_like(onset_salience[:20, :])
-
-            pitch_salience[:20, :] = torch.zeros_like(pitch_salience[:20, :])
-            onset_salience[:20, :] = torch.zeros_like(onset_salience[:20, :])
             
             #note = pitch_contour_reduce(pitch_salience, bins_per_semitone=model.cqt_params['bins_per_octave']//12)
 
@@ -120,8 +115,27 @@ def predict(model, eval_set, multipliers, THRESHOLD=0.5, THRESHOLD_O=0.5, writer
 
             evaluator.append_results(results)
 
-            print(track)
-            print(results)
+            # plt.imshow(ground_truth.cpu().detach().numpy(), cmap='viridis')
+            # plt.axis('off')
+            # plt.savefig('ground_truth.png', bbox_inches='tight', pad_inches=0, dpi=1200)
+
+            # length_len = pitch_salience.size(-1)
+            # ratio_s = 0.1
+            # ratio_e = 0.2
+            
+            # cqt_vis = weak_label_neg.cpu().detach().numpy().squeeze(0)
+            # plt.clf()
+            # plt.imshow(cqt_vis[..., int(length_len*ratio_s):int(length_len*ratio_e)], cmap='viridis')
+            # plt.axis('off')
+            # plt.savefig('cqt.png', bbox_inches='tight', pad_inches=0, dpi=1200)
+
+            # activation_vis = activations
+            # activation_vis[activation_vis>0] = 1
+            # plt.clf()
+            # plt.imshow(activation_vis[..., int(length_len*ratio_s):int(length_len*ratio_e)]*255, cmap='viridis')
+            # plt.axis('off')
+            # plt.savefig('pitch_contour.png', bbox_inches='tight', pad_inches=0, dpi=1200)
+
 
             ############################################################################
             ########                        CFP-HMLC                          ##########
@@ -177,6 +191,32 @@ def predict(model, eval_set, multipliers, THRESHOLD=0.5, THRESHOLD_O=0.5, writer
             ########                        Basic-Pitch                       ##########
             ############################################################################
             
+            onset_activations = threshold(filter_non_peaks(to_array(onset_salience)), THRESHOLD_O)
+            onset_activations_vis = onset_activations
+            onset_activations_vis[onset_activations_vis>0] = 1
+            onset_activations_vis = onset_activations_vis[..., int(length_len*ratio_s):int(length_len*ratio_e)]
+
+            # plt.imshow(onset_activations_vis[..., int(length_len*ratio_s):int(length_len*ratio_e)]*255, cmap='viridis')
+            # plt.axis('off')
+            # plt.savefig('onset_spot.png', bbox_inches='tight', pad_inches=0, dpi=1200)
+
+            y_values, x_values = [], []
+
+            for ith in range(onset_activations_vis.shape[-2]):
+                for jth in range(onset_activations_vis.shape[-1]):
+                    if onset_activations_vis[ith, jth] > 0:
+                        y_values.append(ith)
+                        x_values.append(jth)
+            
+            # print(y_values)
+            # print(x_values)
+            # background = np.zeros_like(onset_activations_vis)
+            # plt.clf()
+            # plt.imshow(background, cmap='viridis') 
+            # plt.scatter(x_values, y_values, s=1, c=y_values, cmap='viridis')
+
+            # plt.axis('off')
+            # plt.savefig('onset_spot.png', bbox_inches='tight', pad_inches=0, dpi=1200)
 
             estimated_notes = output_to_notes_polyphonic(
                 to_array(pitch_salience).T,
@@ -203,6 +243,39 @@ def predict(model, eval_set, multipliers, THRESHOLD=0.5, THRESHOLD_O=0.5, writer
             intervals_est = np.array(intervals_est)
             note_pitches_est = np.array(note_pitches_est)
 
+            note_canva = torch.zeros_like(onset_salience)
+            for note in estimated_notes:
+                for ts in range(note[0], note[1]):
+                    note_canva[note[2], ts] = 255
+
+            plt.clf()
+            plt.imshow(note_canva[..., int(length_len*ratio_s):int(length_len*ratio_e)].cpu().detach().numpy(), cmap='viridis')
+            plt.axis('off')
+            plt.savefig('note_event.png', bbox_inches='tight', pad_inches=0, dpi=1200)
+
+            gt_note = torch.zeros_like(onset_salience)
+            def find_nearest_index(array, value):
+                array = np.asarray(array)
+                idx = (np.abs(array - value)).argmin()
+                return idx
+
+            for note in zip(intervals_ref, note_pitches_ref):
+                note_midi = librosa.hz_to_midi(note[1])
+                # print(note_number)
+                # print(midi_table)
+                
+                note_index = find_nearest_index(midi_table, value=note_midi)
+                # print(note_index)
+                # Find the indices of the time frames that fall within the note interval
+                time_indices = np.where((times_est >= note[0][0]) & (times_est <= note[0][1]))[0]
+
+                # Set the corresponding entries in the gt_note tensor to 1
+                gt_note[note_index, time_indices] = 255
+
+            plt.imshow(gt_note[..., int(length_len*ratio_s):int(length_len*ratio_e)].cpu().detach().numpy(), cmap='viridis')
+            plt.axis('off')
+            plt.savefig('note_groundtruth.png', bbox_inches='tight', pad_inches=0, dpi=1200)
+
             # print(intervals_ref.shape)
             # print(note_pitches_ref.shape)
             # print(intervals_est.shape)
@@ -220,24 +293,10 @@ def predict(model, eval_set, multipliers, THRESHOLD=0.5, THRESHOLD_O=0.5, writer
             Onset_F += score['Onset_F-measure']
             Offset_F += score['Offset_F-measure']
 
-            # if j==1:
-            #     fig, axs = plt.subplots(3, 1, figsize=(12, 8))
-
-            #     axs[0].imshow(pitch_salience[:,:1000].cpu(), cmap='gray')
-            #     axs[0].set_title('pitch')
-            #     axs[1].imshow(onset_salience[:,:1000].cpu(), cmap='gray')
-            #     axs[1].set_title('onset')
-            #     axs[2].imshow(ground_truth[:,:1000], cmap='gray')  
-            #     axs[2].set_title('Groundtruth')
-
-            #     plt.tight_layout()
-
-            #     plt.show()
-            #     assert(False)
 
     average_results, _ = evaluator.average_results()
 
-    print('Result of dataset: ' ,eval_set.name())
+    print('Result of dataset: ', eval_set.name())
     print(average_results)
 
     Precision /= len(eval_set)

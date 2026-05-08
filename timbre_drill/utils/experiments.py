@@ -375,6 +375,7 @@ class MultipitchEvaluator(object):
         # Use mir_eval to compute multi-pitch results at specified tolerance
         results = mir_eval.multipitch.evaluate(times_ref, multi_pitch_ref,
                                                times_est, multi_pitch_est,
+                                               max_freq=8000.0,
                                                window=self.tolerance)
 
         # Make keys lowercase and switch to regular dict type

@@ -45,7 +45,7 @@ def config():
     ##############################
 
     # Specify a checkpoint from which to resume training (None to disable)
-    checkpoint_path = '/host/data/experiments_result/TD-10-2(2AE)/MAPS/onset/MAPS/MAPS_32400.pt'
+    checkpoint_path = '/home/derekpigg/workspace/ss-nt-mpe-rc/generated/experiments/Local_testing/models/URMP_29100.pt'
     #checkpoint_path = None
 
     # Number of seconds of audio per sample
@@ -82,7 +82,7 @@ def config():
     n_epochs_warmup = 0
 
     # Set validation dataset to compare for learning rate decay and early stopping
-    validation_criteria_set = MAPS.name()
+    validation_criteria_set = URMP_Mixtures.name()
 
     # Set validation metric to compare for learning rate decay and early stopping
     validation_criteria_metric = 'loss/total'
@@ -103,7 +103,7 @@ def config():
     n_epochs_early_stop = None
 
     # IDs of the GPUs to use, if available
-    gpu_ids = [0] if DEBUG else [3]
+    gpu_ids = [0] if DEBUG else [0]
 
     # Random seed for this experiment
     seed = 420
@@ -245,7 +245,7 @@ def test_model(checkpoint_path, n_secs, multipliers, gpu_ids, seed, sample_rate,
     magna_base_dir     = None if CONFIG else None
     fma_base_dir       = None if CONFIG else None
     mydb_ptch_base_dir = None if CONFIG else None
-    urmp_base_dir      = None if CONFIG else "/host/dataset/URMP"
+    urmp_base_dir      = None if CONFIG else "/home/derekpigg/workspace/dataset/URMP"
     bch10_base_dir     = None if CONFIG else None
     gset_base_dir      = None if CONFIG else None
     mstro_base_dir     = None if CONFIG else None
@@ -330,13 +330,13 @@ def test_model(checkpoint_path, n_secs, multipliers, gpu_ids, seed, sample_rate,
 
     # Add all validation datasets to a list
     # validation_sets = [nsynth_val, urmp_val, bch10_test, su_test, trios_test]
-    validation_sets = [urmp_val, MAPS_val]
+    validation_sets = [urmp_val]
 
     # Add all evaluation datasets to a list
     # evaluation_sets = [nsynth_test, bch10_test, su_test, trios_test, urmp_test, gset_test]
 
     #evaluation_sets = [urmp_test, urmp_val, MAPS_test, MAPS_val, MusicNet_val]
-    evaluation_sets = [urmp_test, MAPS_test, MAPS_val, MusicNet_val]
+    evaluation_sets = [urmp_test]
     
     #################
     ## PREPARATION ##
@@ -404,7 +404,7 @@ def test_model(checkpoint_path, n_secs, multipliers, gpu_ids, seed, sample_rate,
                                  eval_set=eval_set,
                                  multipliers=multipliers,
                                  THRESHOLD=0.5,
-                                 THRESHOLD_O=0.1,
+                                 THRESHOLD_O=0.9, # O.o
                                  device=device,
                                  eq_fn=eq_fn,
                                  eq_kwargs=eq_kwargs,

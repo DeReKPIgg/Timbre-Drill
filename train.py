@@ -44,20 +44,18 @@ def config():
     ## TRAINING HYPERPARAMETERS ##
     ##############################
 
-    TRAIN_FROM_SCRATCH = False
     Phase1 = False
-    Phase2 = False
     Phase3 = True
 
     pitch_set = 'Nsynth' # Nsynth
-    onset_set = 'MusicNet' # MAPS or URMP or MusicNet
+    onset_set = 'URMP' # MAPS or URMP or MusicNet
 
     set_dict = {'Nsynth': NSynth.name(), 'MAPS': MAPS.name(), 'URMP': URMP_Mixtures.name(), 'MusicNet': MusicNet.name()}
 
     # Specify a checkpoint from which to resume training (None to disable)
 
-    checkpoint_path = '/host/data/experiments_result/TD-10-2(2AE)/MusicNet/pitch/model-24300.pt'
-    #checkpoint_path = None
+    checkpoint_path = '/home/derekpigg/workspace/ss-nt-mpe-rc/generated/experiments/Local_testing/models/model-5700.pt'
+    # checkpoint_path = None
 
     # Maximum number of training iterations to conduct
     max_epochs = 1 if CONFIG else 100
@@ -94,7 +92,7 @@ def config():
         'sparsity_p' : 1.5,
         'timbre_p' : 1,
         'geometric_p' : 1,
-        'time_sim': 1.5,
+        'time_sim': 0,
 
         'sparsity_n': 5,
         'note_harmonic': 0.1,
@@ -119,7 +117,7 @@ def config():
 
     # Set validation dataset to compare for learning rate decay and early stopping
 
-    validation_criteria_set = MAPS.name()
+    validation_criteria_set = set_dict[pitch_set]
 
     # Set validation metric to compare for learning rate decay and early stopping
     validation_criteria_metric = 'loss/total'
@@ -140,7 +138,7 @@ def config():
     n_epochs_early_stop = None
 
     # IDs of the GPUs to use, if available
-    gpu_ids = [0] if DEBUG else [2]
+    gpu_ids = [0] if DEBUG else [0]
 
     # Random seed for this experiment
     seed = 4200
@@ -286,13 +284,13 @@ def train_model(TRAIN_FROM_SCRATCH, Phase1, Phase2, Phase3, pitch_set, onset_set
     model = model.to(device)
 
     # Point to the datasets within the storage drive containing them or use the default location
-    nsynth_base_dir    = None if CONFIG else "/host/dataset/NSynth"
+    nsynth_base_dir    = None if CONFIG else "/home/derekpigg/workspace/dataset/NSynth"
     mnet_base_dir      = None if CONFIG else None
     mydb_base_dir      = None if CONFIG else None
     magna_base_dir     = None if CONFIG else None
     fma_base_dir       = None if CONFIG else None
     mydb_ptch_base_dir = None if CONFIG else None
-    urmp_base_dir      = None if CONFIG else "/host/dataset/URMP"
+    urmp_base_dir      = None if CONFIG else "/home/derekpigg/workspace/dataset/URMP"
     bch10_base_dir     = None if CONFIG else None
     gset_base_dir      = None if CONFIG else None
     mstro_base_dir     = None if CONFIG else None
@@ -430,7 +428,7 @@ def train_model(TRAIN_FROM_SCRATCH, Phase1, Phase2, Phase3, pitch_set, onset_set
     elif onset_set == 'MusicNet':
         onset_train.append(MusicNet_train)
     else:
-        assert(False, "Invalid onset training set.")
+        assert False, "Invalid onset training set."
 
     onset_train = ComboDataset(onset_train)
 
@@ -456,13 +454,16 @@ def train_model(TRAIN_FROM_SCRATCH, Phase1, Phase2, Phase3, pitch_set, onset_set
         onset_loader = [None] * len(pitch_loader)
 
     # Add all validation datasets to a list
-    # validation_sets = [nsynth_val, urmp_val, bch10_test, su_test, trios_test]
-    validation_sets = [nsynth_val, urmp_val, MAPS_val, MusicNet_val]
-    validation_sets_onset = [urmp_val, MAPS_val, MusicNet_val]
+    # # validation_sets = [nsynth_val, urmp_val, bch10_test, su_test, trios_test]
+    # validation_sets = [nsynth_val, urmp_val, MAPS_val, MusicNet_val]
+    # validation_sets_onset = [urmp_val, MAPS_val, MusicNet_val]
+    validation_sets_onset = [urmp_val]
+    validation_sets = [urmp_val]
 
     # Add all evaluation datasets to a list
     # evaluation_sets = [nsynth_test, bch10_test, su_test, trios_test, urmp_test, gset_test]
-    evaluation_sets = [nsynth_val, nsynth_test, urmp_val, urmp_test, MusicNet_val, MAPS_val, MAPS_test]
+    # evaluation_sets = [nsynth_val, nsynth_test, urmp_val, urmp_test, MusicNet_val, MAPS_val, MAPS_test]
+    evaluation_sets = [urmp_val]
 
     #################
     ## PREPARATION ##
@@ -472,15 +473,6 @@ def train_model(TRAIN_FROM_SCRATCH, Phase1, Phase2, Phase3, pitch_set, onset_set
     optimizer = torch.optim.AdamW([{'params' : model.encoder_parameters(), 'lr' : learning_rates[0]},
                                    {'params' : model.decoder_parameters(), 'lr' : learning_rates[1]}])
     
-    # optimizer_note = torch.optim.AdamW([
-    #                             {'params' : model.pitch2note_E_parameters(), 'lr' : learning_rates[2]},
-    #                             {'params' : model.pitch2note_D_parameters(), 'lr' : learning_rates[3]}])
-
-    # optimizer_onset = torch.optim.AdamW([
-    #                             {'params' : model.note_aug_parameters(), 'lr' : learning_rates[4]},
-    #                             {'params' : model.input2note_parameters(), 'lr' : learning_rates[5]},
-    #                             {'params' : model.note2onset_parameters(), 'lr' : learning_rates[6]}])
-
     optimizer_onset = torch.optim.AdamW([
                                 {'params' : model.encoder_onset_parameters(), 'lr' : learning_rates[2]},
                                 {'params' : model.decoder_onset_parameters(), 'lr' : learning_rates[3]}])
@@ -607,45 +599,9 @@ def train_model(TRAIN_FROM_SCRATCH, Phase1, Phase2, Phase3, pitch_set, onset_set
     ##############################
     ## TRAINING/VALIDATION LOOP ##
     ##############################
-    if TRAIN_FROM_SCRATCH:
-        Phase1 = True
-        Phase2 = False
-        Phase3 = False
-        mode_num = 3
-    else:
-        if Phase1 and not Phase2 and not Phase3:
-            mode_num = 1
-        elif Phase1 and Phase2 and not Phase3:
-            mode_num = 2
-        elif not Phase1 and Phase2 and not Phase3:
-            mode_num = 1
-        elif not Phase1 and Phase2 and Phase3:
-            mode_num = 2
-        elif not Phase1 and not Phase2 and Phase3:
-            mode_num = 1
-        else:
-            assert(False, "Invalid phase combination.")
     
     # Loop through epochs
-    for i in range(max_epochs*mode_num):
-
-        if i == max_epochs and mode_num==3:
-            Phase1 = False
-            Phase2 = True
-            Phase3 = False
-        elif i == max_epochs and mode_num==2 and Phase1:
-            Phase1 = False
-            Phase2 = True
-            Phase3 = False
-        elif i == max_epochs and mode_num==2 and Phase2:
-            Phase1 = False
-            Phase2 = False
-            Phase3 = True
-        elif i == max_epochs*2 and mode_num==3:
-            Phase1 = False
-            Phase2 = False
-            Phase3 = True
-            break
+    for i in range(max_epochs):
 
         if Phase1:
 
@@ -764,8 +720,7 @@ def train_model(TRAIN_FROM_SCRATCH, Phase1, Phase2, Phase3, pitch_set, onset_set
                     if batch_count % checkpoint_interval == 0:
                          # Construct a path to save the model checkpoint
                         model_path = os.path.join(log_dir, f'model-{batch_count}.pt')
-                        # Save model checkpoint
-                        model.save(model_path)
+                        
 
                         if cudnn_benchmarking:
                             # Disable benchmarking prior to validation
@@ -811,6 +766,8 @@ def train_model(TRAIN_FROM_SCRATCH, Phase1, Phase2, Phase3, pitch_set, onset_set
                                 (not validation_criteria_maximize and current_score < best_score):
                             print(f'New best at {batch_count} iterations...')
 
+                            # Save model checkpoint
+                            model.save(model_path)
                             # Set current checkpoint as best
                             best_model_checkpoint = batch_count
                             # Update best results
@@ -1121,8 +1078,7 @@ def train_model(TRAIN_FROM_SCRATCH, Phase1, Phase2, Phase3, pitch_set, onset_set
                 if batch_count % checkpoint_interval == 0:
                      # Construct a path to save the model checkpoint
                     model_path = os.path.join(log_dir, f'{onset_set}_{batch_count}.pt')
-                    # Save model checkpoint
-                    model.save(model_path)
+                    
 
                     if cudnn_benchmarking:
                         # Disable benchmarking prior to validation
@@ -1152,41 +1108,43 @@ def train_model(TRAIN_FROM_SCRATCH, Phase1, Phase2, Phase3, pitch_set, onset_set
                         # Re-enable benchmarking after validation
                         torch.backends.cudnn.benchmark = True
 
-                        if decay_scheduler_onset.patience and not warmup_scheduler_onset.is_active() and i >= n_epochs_late_start:
-                            # Step the learning rate decay scheduler by logging the validation metric for the checkpoint
-                            decay_scheduler_onset.step(validation_results[validation_criteria_set][validation_criteria_metric])
+                    if decay_scheduler_onset.patience and not warmup_scheduler_onset.is_active() and i >= n_epochs_late_start:
+                        # Step the learning rate decay scheduler by logging the validation metric for the checkpoint
+                        decay_scheduler_onset.step(validation_results[validation_criteria_set][validation_criteria_metric])
 
-                        # Extract the result on the specified metric from the validation results for comparison
-                        current_score = validation_results[validation_criteria_set][validation_criteria_metric]
+                    # Extract the result on the specified metric from the validation results for comparison
+                    current_score = validation_results[validation_criteria_set][validation_criteria_metric]
 
-                        if best_results is not None:
-                            # Extract the currently tracked best result on the specified metric for comparison
-                            best_score = best_results[validation_criteria_set][validation_criteria_metric]
+                    if best_results is not None:
+                        # Extract the currently tracked best result on the specified metric for comparison
+                        best_score = best_results[validation_criteria_set][validation_criteria_metric]
 
-                        if best_results is None or \
-                                (validation_criteria_maximize and current_score > best_score) or \
-                                (not validation_criteria_maximize and current_score < best_score):
-                            print(f'New best at {batch_count} iterations...')
 
-                            # Set current checkpoint as best
-                            best_model_checkpoint = batch_count
-                            # Update best results
-                            best_results = validation_results
-                            # Reset number of checkpoints
-                            n_checkpoints_elapsed = 0
-                        else:
-                            # Increment number of checkpoints
-                            n_checkpoints_elapsed += 1
+                    if best_results is None or \
+                            (validation_criteria_maximize and current_score > best_score) or \
+                            (not validation_criteria_maximize and current_score < best_score):
+                        print(f'New best at {batch_count} iterations...')
+                        # Save model checkpoint
+                        model.save(model_path)
+                        # Set current checkpoint as best
+                        best_model_checkpoint = batch_count
+                        # Update best results
+                        best_results = validation_results
+                        # Reset number of checkpoints
+                        n_checkpoints_elapsed = 0
+                    else:
+                        # Increment number of checkpoints
+                        n_checkpoints_elapsed += 1
 
-                        if n_checkpoints_early_stop is not None and n_checkpoints_elapsed >= n_checkpoints_early_stop:
-                            # Early stop criteria has been reached
-                            early_stop_criteria = True
+                    if n_checkpoints_early_stop is not None and n_checkpoints_elapsed >= n_checkpoints_early_stop:
+                        # Early stop criteria has been reached
+                        early_stop_criteria = True
 
-                            break
+                        break
 
-                        if early_stop_criteria:
-                            # Stop training
-                            break
+                    if early_stop_criteria:
+                        # Stop training
+                        break
         else:
             print('No Phase3 training...')
 
