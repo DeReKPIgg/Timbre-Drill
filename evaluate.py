@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 def evaluate(model, eval_set, multipliers, THRESHOLD=0.5, writer=None,
              i=0, device='cpu', eq_fn=None, eq_kwargs={}, gm_kwargs={},
-             plotNsave=False):
+             plotNsave=False, eval_all=False):
     # Initialize a new evaluator for the dataset
     evaluator = MultipitchEvaluator()
 
@@ -157,7 +157,8 @@ def evaluate(model, eval_set, multipliers, THRESHOLD=0.5, writer=None,
                 plot_path = plot_path_root + '/' + track
                 plt.savefig(plot_path)
 
-            break
+            if not eval_all:
+                break
 
         # Compute the average for all scores
         average_results, _ = evaluator.average_results()

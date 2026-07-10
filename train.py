@@ -44,18 +44,17 @@ def config():
     ## TRAINING HYPERPARAMETERS ##
     ##############################
 
-    Phase1 = False
-    Phase3 = True
+    Phase1 = True
+    Phase3 = False
 
-    pitch_set = 'Nsynth' # Nsynth
+    pitch_set = 'URMP' # Nsynth
     onset_set = 'URMP' # MAPS or URMP or MusicNet
 
     set_dict = {'Nsynth': NSynth.name(), 'MAPS': MAPS.name(), 'URMP': URMP_Mixtures.name(), 'MusicNet': MusicNet.name()}
 
     # Specify a checkpoint from which to resume training (None to disable)
 
-    checkpoint_path = '/home/derekpigg/workspace/ss-nt-mpe-rc/generated/experiments/Local_testing/models/model-5700.pt'
-    # checkpoint_path = None
+    checkpoint_path = None
 
     # Maximum number of training iterations to conduct
     max_epochs = 1 if CONFIG else 100
@@ -87,9 +86,9 @@ def config():
 
     # Scaling factors for each loss term
     multipliers = {
-        'support_p' : 1.2,
-        'harmonic_p' : 1.5,
-        'sparsity_p' : 1.5,
+        'support_p' : 1,
+        'harmonic_p' : 1,
+        'sparsity_p' : 1,
         'timbre_p' : 1,
         'geometric_p' : 1,
         'time_sim': 0,
@@ -118,6 +117,7 @@ def config():
     # Set validation dataset to compare for learning rate decay and early stopping
 
     validation_criteria_set = set_dict[pitch_set]
+    #validation_criteria_set = NSynth.name()
 
     # Set validation metric to compare for learning rate decay and early stopping
     validation_criteria_metric = 'loss/total'
@@ -198,7 +198,7 @@ def config():
     ex.observers.append(FileStorageObserver(root_dir))
 
 @ex.automain
-def train_model(TRAIN_FROM_SCRATCH, Phase1, Phase2, Phase3, pitch_set, onset_set, set_dict,
+def train_model(Phase1, Phase3, pitch_set, onset_set, set_dict,
                 checkpoint_path, max_epochs, checkpoint_interval, batch_size, n_secs, learning_rates,
                 multipliers, n_epochs_warmup, validation_criteria_set, validation_criteria_metric,
                 validation_criteria_maximize, n_epochs_late_start, n_epochs_decay, n_epochs_cooldown,
@@ -297,12 +297,12 @@ def train_model(TRAIN_FROM_SCRATCH, Phase1, Phase2, Phase3, pitch_set, onset_set
     swd_base_dir       = None if CONFIG else None
     su_base_dir        = None if CONFIG else None
     trios_base_dir     = None if CONFIG else None
-    maps_base_dir = None if CONFIG else '/host/dataset/MAPS'
-    musicnet_base_dir = None if CONFIG else '/host/dataset/MusicNet'
+    maps_base_dir = None if CONFIG else '/home/derekpigg/workspace/dataset/MAPS'
+    musicnet_base_dir = None if CONFIG else '/home/derekpigg/workspace/dataset/MusicNet'
 
     urmp_train_splits = URMP_Mixtures.available_splits()
 
-    maps_train_splits = ['MAPS_AkPnBcht_2', 
+    maps_train_splits = ['MAPS_AkPnBcht_2',
                   'MAPS_AkPnBsdf_2',
                   'MAPS_AkPnCGdD_2',
                   'MAPS_AkPnStgb_2',
@@ -389,12 +389,12 @@ def train_model(TRAIN_FROM_SCRATCH, Phase1, Phase2, Phase3, pitch_set, onset_set
                               cqt=model.sliCQ,
                               seed=seed)
 
-    MAPS_train = MAPS(base_dir=maps_base_dir,
-                 splits=maps_train_splits,
-                 sample_rate=sample_rate,
-                 cqt=model.sliCQ,
-                 n_secs=n_secs,
-                 seed=seed)
+    # MAPS_train = MAPS(base_dir=maps_base_dir,
+    #              splits=maps_train_splits,
+    #              sample_rate=sample_rate,
+    #              cqt=model.sliCQ,
+    #              n_secs=n_secs,
+    #              seed=seed)
     
     MAPS_val = MAPS(base_dir=maps_base_dir,
                  splits=maps_val_splits,
@@ -402,11 +402,11 @@ def train_model(TRAIN_FROM_SCRATCH, Phase1, Phase2, Phase3, pitch_set, onset_set
                  cqt=model.sliCQ,
                  seed=seed)
 
-    MAPS_test = MAPS(base_dir=maps_base_dir,
-                 splits=maps_test_splits,
-                 sample_rate=sample_rate,
-                 cqt=model.sliCQ,
-                 seed=seed)
+    # MAPS_test = MAPS(base_dir=maps_base_dir,
+    #              splits=maps_test_splits,
+    #              sample_rate=sample_rate,
+    #              cqt=model.sliCQ,
+    #              seed=seed)
 
     MusicNet_train = MusicNet(base_dir=musicnet_base_dir,
                  splits=['train'],
@@ -458,12 +458,11 @@ def train_model(TRAIN_FROM_SCRATCH, Phase1, Phase2, Phase3, pitch_set, onset_set
     # validation_sets = [nsynth_val, urmp_val, MAPS_val, MusicNet_val]
     # validation_sets_onset = [urmp_val, MAPS_val, MusicNet_val]
     validation_sets_onset = [urmp_val]
-    validation_sets = [urmp_val]
+    validation_sets = [urmp_val, MAPS_val, nsynth_val]
 
     # Add all evaluation datasets to a list
     # evaluation_sets = [nsynth_test, bch10_test, su_test, trios_test, urmp_test, gset_test]
     # evaluation_sets = [nsynth_val, nsynth_test, urmp_val, urmp_test, MusicNet_val, MAPS_val, MAPS_test]
-    evaluation_sets = [urmp_val]
 
     #################
     ## PREPARATION ##

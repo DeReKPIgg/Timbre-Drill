@@ -17,7 +17,7 @@ import mir_eval
 
 def predict(model, eval_set, multipliers, THRESHOLD=0.5, THRESHOLD_O=0.5, writer=None,
              i=0, device='cpu', eq_fn=None, eq_kwargs={}, gm_kwargs={}, midi_path=None,
-             melodia_trick=True, plotNsave=False):
+             melodia_trick=True, plotNsave=False, pitch_only=False):
     # Initialize a new evaluator for the dataset
     evaluator = MultipitchEvaluator()
 
@@ -98,7 +98,7 @@ def predict(model, eval_set, multipliers, THRESHOLD=0.5, THRESHOLD_O=0.5, writer
             
             #pitch_salience, onset_salience = model.inference(input)
             pitch_salience, onset_salience = model.inference_sep(input)
-            
+
             #note = pitch_contour_reduce(pitch_salience, bins_per_semitone=model.cqt_params['bins_per_octave']//12)
 
             # Determine the times associated with predictions
@@ -136,6 +136,8 @@ def predict(model, eval_set, multipliers, THRESHOLD=0.5, THRESHOLD_O=0.5, writer
             # plt.axis('off')
             # plt.savefig('pitch_contour.png', bbox_inches='tight', pad_inches=0, dpi=1200)
 
+            if pitch_only:
+                continue
 
             ############################################################################
             ########                        CFP-HMLC                          ##########

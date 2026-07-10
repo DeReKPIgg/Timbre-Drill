@@ -45,7 +45,7 @@ def config():
     ##############################
 
     # Specify a checkpoint from which to resume training (None to disable)
-    checkpoint_path = '/home/derekpigg/workspace/ss-nt-mpe-rc/generated/experiments/Local_testing/models/URMP_29100.pt'
+    checkpoint_path = '/home/derekpigg/workspace/ss-nt-mpe-rc/generated/experiments/Local_testing/models/model-9300.pt'
     #checkpoint_path = None
 
     # Number of seconds of audio per sample
@@ -73,7 +73,7 @@ def config():
         'geometric_o' : 1,
         'weightedSF': 1,
 
-        'reconstruction' : 1,
+        'reconstruction' : 0,
 
         'supervised' : 0
     }
@@ -103,7 +103,7 @@ def config():
     n_epochs_early_stop = None
 
     # IDs of the GPUs to use, if available
-    gpu_ids = [0] if DEBUG else [0]
+    gpu_ids = [0] if DEBUG else [1]
 
     # Random seed for this experiment
     seed = 420
@@ -239,7 +239,7 @@ def test_model(checkpoint_path, n_secs, multipliers, gpu_ids, seed, sample_rate,
     model = model.to(device)
 
     # Point to the datasets within the storage drive containing them or use the default location
-    nsynth_base_dir    = None if CONFIG else "/host/dataset/NSynth"
+    nsynth_base_dir    = None if CONFIG else "/home/derekpigg/workspace/dataset/NSynth"
     mnet_base_dir      = None if CONFIG else None
     mydb_base_dir      = None if CONFIG else None
     magna_base_dir     = None if CONFIG else None
@@ -252,8 +252,8 @@ def test_model(checkpoint_path, n_secs, multipliers, gpu_ids, seed, sample_rate,
     swd_base_dir       = None if CONFIG else None
     su_base_dir        = None if CONFIG else None
     trios_base_dir     = None if CONFIG else None
-    maps_base_dir = None if CONFIG else '/host/dataset/MAPS'
-    musicnet_base_dir = None if CONFIG else '/host/dataset/MusicNet'
+    maps_base_dir = None if CONFIG else '/home/derekpigg/workspace/dataset/MAPS'
+    musicnet_base_dir = None if CONFIG else '/home/derekpigg/workspace/dataset/MusicNet'
 
     urmp_train_splits = URMP_Mixtures.available_splits()
 
@@ -336,7 +336,7 @@ def test_model(checkpoint_path, n_secs, multipliers, gpu_ids, seed, sample_rate,
     # evaluation_sets = [nsynth_test, bch10_test, su_test, trios_test, urmp_test, gset_test]
 
     #evaluation_sets = [urmp_test, urmp_val, MAPS_test, MAPS_val, MusicNet_val]
-    evaluation_sets = [urmp_test]
+    evaluation_sets = [urmp_val, MAPS_test, MusicNet_val, urmp_test]
     
     #################
     ## PREPARATION ##
@@ -403,7 +403,7 @@ def test_model(checkpoint_path, n_secs, multipliers, gpu_ids, seed, sample_rate,
         final_results = predict(model=model,
                                  eval_set=eval_set,
                                  multipliers=multipliers,
-                                 THRESHOLD=0.5,
+                                 THRESHOLD=0.4,
                                  THRESHOLD_O=0.9, # O.o
                                  device=device,
                                  eq_fn=eq_fn,
@@ -411,7 +411,20 @@ def test_model(checkpoint_path, n_secs, multipliers, gpu_ids, seed, sample_rate,
                                  gm_kwargs=gm_kwargs,
                                  plotNsave=False,
                                  melodia_trick=True,
-                                 midi_path='./output.mid')
+                                 midi_path='./output.mid',
+                                 pitch_only=True)
+
+        # validation_results = evaluate(model=model,
+        #                             eval_set=eval_set,
+        #                             multipliers=multipliers,
+        #                             THRESHOLD=0.5,
+        #                             writer=writer,
+        #                             i=0,
+        #                             eval_all=True,
+        #                             device=device,
+        #                             eq_fn=eq_fn,
+        #                             eq_kwargs=eq_kwargs,
+        #                             gm_kwargs=gm_kwargs)
 
         
         
